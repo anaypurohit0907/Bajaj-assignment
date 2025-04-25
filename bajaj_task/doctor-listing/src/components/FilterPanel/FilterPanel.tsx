@@ -21,19 +21,51 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   onSpecialtyChange,
   onSortChange,
 }) => {
+  // Add debugging
+  console.log('FilterPanel rendering with specialties:', specialties);
+  
   // Function to reset all filters
   const resetAllFilters = () => {
-    // Reset consultation type
     onConsultationTypeChange(null);
-    
-    // Reset all specialties
     selectedSpecialties.forEach(specialty => {
       onSpecialtyChange(specialty);
     });
-    
-    // Reset sort
     onSortChange(null);
   };
+
+  // Helper function to generate the correct data-testid for specialty
+  const getSpecialtyTestId = (specialty: string) => {
+    // Handle specialty with forward slash (Dietitian/Nutritionist)
+    return `filter-specialty-${specialty.replace('/', '-')}`;
+  };
+
+  // Hard-coded specialties list from the requirements
+  const hardcodedSpecialties = [
+    'General Physician',
+    'Dentist',
+    'Dermatologist',
+    'Paediatrician',
+    'Gynaecologist',
+    'ENT',
+    'Diabetologist',
+    'Cardiologist',
+    'Physiotherapist',
+    'Endocrinologist',
+    'Orthopaedic',
+    'Ophthalmologist',
+    'Gastroenterologist',
+    'Pulmonologist',
+    'Psychiatrist',
+    'Urologist',
+    'Dietitian/Nutritionist',
+    'Psychologist',
+    'Sexologist',
+    'Nephrologist',
+    'Neurologist',
+    'Oncologist',
+    'Ayurveda',
+    'Homeopath'
+  ];
 
   return (
     <div className="filter-panel">
@@ -65,8 +97,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
       <div className="filter-section">
         <h3 data-testid="filter-header-speciality">Speciality</h3>
-        <div className="filter-options">
-          {specialties.map((specialty) => (
+        <div className="filter-options speciality-options">
+          {/* Use hard-coded specialties instead of the dynamic ones */}
+          {hardcodedSpecialties.map((specialty) => (
             <label key={specialty} className="checkbox-label">
               <input
                 type="checkbox"
@@ -106,7 +139,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         </div>
       </div>
       
-      {/* Reset button */}
       <div className="filter-section">
         <button 
           className="reset-button" 

@@ -53,3 +53,27 @@
 .reset-button:hover {
   background-color: #303f9f;
 }
+
+.speciality-options {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.speciality-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.speciality-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.speciality-options::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.speciality-options::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

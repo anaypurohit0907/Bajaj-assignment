@@ -12,68 +12,70 @@ export const fetchDoctors = async (): Promise<Doctor[]> => {
     }
     
     const data = await response.json();
-    console.log('Received data:', data);
+    console.log('Received data type:', typeof data);
     
-    // Check if the data is an array
-    if (!Array.isArray(data)) {
-      console.error('Expected array but received:', typeof data);
-      // If data is not an array but has a property that might contain the doctors array
-      if (data && typeof data === 'object') {
-        for (const key in data) {
-          if (Array.isArray(data[key])) {
-            return validateDoctorData(data[key]);
-          }
-        }
-      }
-      throw new Error('Invalid data format');
-    }
+    // Transform the API data to match our Doctor interface
+    const doctors: Doctor[] = data.map((item: any) => {
+      // Extract experience as a number
+      const experienceMatch = item.experience?.match(/(\d+)/);
+      const experienceYears = experienceMatch ? parseInt(experienceMatch[1]) : 0;
+      
+      // Extract consultation fee as a number
+      const feeMatch = item.fees?.match(/(\d+)/);
+      const consultationFee = feeMatch ? parseInt(feeMatch[1]) : 0;
+      
+      // Extract specialties
+      const specialties = item.specialities?.map((spec: any) => spec.name) || [];
+      
+      // Handle specialities with "and" in the name (map to standard specialty names)
+      const normalizedSpecialties = specialties.map((spec: string) => {
+        if (spec === "Gynaecologist and Obstetrician") return "Gynaecologist";
+        if (spec === "Dietitian/Nutritionist") return "Dietitian/Nutritionist";
+        return spec;
+      });
+      
+      // Determine consultation modes
+      const consultationModes = [];
+      if (item.video_consult) consultationModes.push('Video Consult');
+      if (item.in_clinic) consultationModes.push('In Clinic');
+      
+      // Create doctor object
+      const doctor: Doctor = {
+        id: parseInt(item.id.toString()) || Math.random(),
+        name: item.name || 'Unknown Doctor',
+        specialty: normalizedSpecialties,
+        experience: experienceYears,
+        consultation_mode: consultationModes,
+        photo: item.photo || 'https://via.placeholder.com/150',
+        degree: item.doctor_introduction?.split(',')[0] || '',
+        languages: item.languages || ['English'],
+        consultation_fee: consultationFee,
+        location: item.clinic?.address?.locality || 'Unknown',
+        skills: [],
+        about: item.doctor_introduction || ''
+      };
+      
+      return doctor;
+    });
     
-    return validateDoctorData(data);
+    console.log('Processed doctors:', doctors.length);
+    return doctors;
   } catch (error) {
     console.error('Error fetching doctors:', error);
-    throw error; // Re-throw to handle in the component
+    throw error;
   }
-};
-
-// Helper function to validate and clean doctor data
-const validateDoctorData = (data: any[]): Doctor[] => {
-  return data.map(item => {
-    // Create a valid doctor object with default values for missing properties
-    const doctor: Doctor = {
-      id: item.id || Math.random(),
-      name: item.name || 'Unknown Doctor',
-      specialty: Array.isArray(item.specialty) ? item.specialty : 
-                 (item.specialty ? [item.specialty] : ['General']),
-      experience: typeof item.experience === 'number' ? item.experience : 0,
-      consultation_mode: Array.isArray(item.consultation_mode) ? item.consultation_mode : 
-                        (item.consultation_mode ? [item.consultation_mode] : ['In Clinic']),
-      photo: item.photo || 'https://via.placeholder.com/150',
-      degree: item.degree || 'MD',
-      languages: Array.isArray(item.languages) ? item.languages : ['English'],
-      consultation_fee: typeof item.consultation_fee === 'number' ? item.consultation_fee : 0,
-      location: item.location || 'Unknown',
-      skills: Array.isArray(item.skills) ? item.skills : [],
-      about: item.about || ''
-    };
-    
-    return doctor;
-  });
 };
 
 export const getUniqueSpecialties = (doctors: Doctor[]): string[] => {
   const specialtySet = new Set<string>();
   
   doctors.forEach(doctor => {
-    // Make sure specialty is an array before trying to iterate over it
     if (Array.isArray(doctor.specialty)) {
       doctor.specialty.forEach(specialty => {
         if (specialty) {
           specialtySet.add(specialty);
         }
       });
-    } else if (doctor.specialty) {
-      // If somehow specialty is a string, add it
-      specialtySet.add(doctor.specialty as unknown as string);
     }
   });
   

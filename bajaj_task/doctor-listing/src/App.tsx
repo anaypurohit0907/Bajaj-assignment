@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-
 import './App.css';
 import { Doctor, ConsultationType, SortType } from './types';
 import { fetchDoctors, getUniqueSpecialties } from './services/doctorService';
@@ -21,6 +20,34 @@ function App() {
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [sortType, setSortType] = useState<SortType>(null);
 
+  // Hard-coded specialties list from requirements
+  const hardcodedSpecialties = [
+    'General Physician',
+    'Dentist',
+    'Dermatologist',
+    'Paediatrician',
+    'Gynaecologist',
+    'ENT',
+    'Diabetologist',
+    'Cardiologist',
+    'Physiotherapist',
+    'Endocrinologist',
+    'Orthopaedic',
+    'Ophthalmologist',
+    'Gastroenterologist',
+    'Pulmonologist',
+    'Psychiatrist',
+    'Urologist',
+    'Dietitian/Nutritionist',
+    'Psychologist',
+    'Sexologist',
+    'Nephrologist',
+    'Neurologist',
+    'Oncologist',
+    'Ayurveda',
+    'Homeopath'
+  ];
+
   // Fetch doctors data
   useEffect(() => {
     const getData = async () => {
@@ -35,15 +62,17 @@ function App() {
         if (data && data.length > 0) {
           setDoctors(data);
           setFilteredDoctors(data);
-          const uniqueSpecialties = getUniqueSpecialties(data);
-          console.log('Unique specialties:', uniqueSpecialties);
-          setSpecialties(uniqueSpecialties);
+          
+          // Always use hardcoded specialties for consistency
+          setSpecialties(hardcodedSpecialties);
         } else {
           throw new Error('No doctors data found');
         }
       } catch (err) {
         console.error('Error in getData:', err);
         setError('Failed to fetch doctors data. Please try again later.');
+        // Still set specialties even on error
+        setSpecialties(hardcodedSpecialties);
       } finally {
         setLoading(false);
       }
@@ -76,39 +105,41 @@ function App() {
         filtered = filtered.filter(doctor =>
           doctor.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
+        console.log(`After search filter (${searchTerm}):`, filtered.length);
       }
       
       // Filter by consultation type
       if (consultationType) {
-        filtered = filtered.filter(doctor =>
-          doctor.consultation_mode.some(mode => 
-            mode.toLowerCase() === consultationType.toLowerCase()
-          )
+        filtered = filtered.filter(doctor => 
+          doctor.consultation_mode.includes(consultationType)
         );
+        console.log(`After consultation filter (${consultationType}):`, filtered.length);
       }
       
       // Filter by selected specialties
       if (selectedSpecialties.length > 0) {
-        filtered = filtered.filter(doctor =>
-          doctor.specialty.some(spec => 
-            selectedSpecialties.includes(spec)
-          )
-        );
+        filtered = filtered.filter(doctor => {
+          return selectedSpecialties.some(selectedSpecialty => 
+            doctor.specialty.some(docSpecialty => 
+              docSpecialty.includes(selectedSpecialty) || selectedSpecialty.includes(docSpecialty)
+            )
+          );
+        });
+        console.log(`After specialty filter (${selectedSpecialties.join(', ')}):`, filtered.length);
       }
       
       // Sort the filtered doctors
       if (sortType) {
-        filtered.sort((a, b) => {
-          if (sortType === 'fees') {
-            return a.consultation_fee - b.consultation_fee;
-          } else if (sortType === 'experience') {
-            return b.experience - a.experience;
-          }
-          return 0;
-        });
+        if (sortType === 'fees') {
+          filtered.sort((a, b) => a.consultation_fee - b.consultation_fee);
+          console.log('Sorted by fees (low to high)');
+        } else if (sortType === 'experience') {
+          filtered.sort((a, b) => b.experience - a.experience);
+          console.log('Sorted by experience (high to low)');
+        }
       }
       
-      console.log(`Filtered doctors: ${filtered.length} of ${doctors.length}`);
+      console.log(`Final filtered doctors: ${filtered.length} of ${doctors.length}`);
       setFilteredDoctors(filtered);
       
       // Update URL query parameters
@@ -118,16 +149,19 @@ function App() {
 
   // Handle search
   const handleSearch = (term: string) => {
+    console.log('Search term changed:', term);
     setSearchTerm(term);
   };
 
   // Handle consultation type change
   const handleConsultationTypeChange = (type: ConsultationType) => {
+    console.log('Consultation type changed:', type);
     setConsultationType(type === consultationType ? null : type);
   };
 
   // Handle specialty selection
   const handleSpecialtyChange = (specialty: string) => {
+    console.log('Specialty selection changed:', specialty);
     setSelectedSpecialties(prev => 
       prev.includes(specialty)
         ? prev.filter(s => s !== specialty)
@@ -137,6 +171,7 @@ function App() {
 
   // Handle sort change
   const handleSortChange = (type: SortType) => {
+    console.log('Sort type changed:', type);
     setSortType(type === sortType ? null : type);
   };
 
@@ -158,21 +193,6 @@ function App() {
     };
   }, []);
 
-  const retryFetch = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchDoctors();
-      setDoctors(data);
-      setFilteredDoctors(data);
-      setSpecialties(getUniqueSpecialties(data));
-    } catch (err) {
-      setError('Failed to fetch doctors data. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="App">
       <header className="App-header">
@@ -186,17 +206,15 @@ function App() {
       <main className="App-main">
         <div className="App-container">
           <div className="App-sidebar">
-            {doctors.length > 0 && (
-              <FilterPanel
-                specialties={specialties}
-                consultationType={consultationType}
-                selectedSpecialties={selectedSpecialties}
-                sortType={sortType}
-                onConsultationTypeChange={handleConsultationTypeChange}
-                onSpecialtyChange={handleSpecialtyChange}
-                onSortChange={handleSortChange}
-              />
-            )}
+            <FilterPanel
+              specialties={specialties}
+              consultationType={consultationType}
+              selectedSpecialties={selectedSpecialties}
+              sortType={sortType}
+              onConsultationTypeChange={handleConsultationTypeChange}
+              onSpecialtyChange={handleSpecialtyChange}
+              onSortChange={handleSortChange}
+            />
           </div>
           
           <div className="App-content">
@@ -205,7 +223,7 @@ function App() {
             ) : error ? (
               <div className="error">
                 {error}
-                <button onClick={retryFetch} className="retry-button">Retry</button>
+                <button onClick={() => window.location.reload()} className="retry-button">Retry</button>
               </div>
             ) : filteredDoctors.length === 0 ? (
               <div className="no-results">No doctors found matching your criteria.</div>
